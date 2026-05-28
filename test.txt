@@ -1,0 +1,960 @@
+const Eris = require("eris");
+const bot = new Eris.Client(process.env.bot_token);
+var prefix = process.env.prefix;
+var owner_id = process.env.owner_id;
+var bannedIDs = [
+  "535118965840674826",
+  "418972590783332352",
+  "733457291613044837",
+  "776098692821286963",
+  "735197291073503233",
+  "418972590783332352",
+  "824650989100335155",
+  "857831373774913576",
+  "704806038267887658",
+  "672574065759879177",
+    "875568238451372093"
+];
+var bt_ids = [
+  "535118965840674826",
+  "418972590783332352",
+  "733457291613044837",
+  "776098692821286963",
+  "735197291073503233",
+];
+
+bot.on("ready", () => {
+  console.log("Bot ready!");
+  var canLogToDiscord = true;
+  //bot.createMessage("761295356951789581", process.env.SERVER + " is online! Play now at https://arras-mayhem.glitch.me or https://arras.neocities.org");
+});
+
+bot.on("disconnect", () => {
+  console.log("Disconnected from Discord.");
+});
+
+bot.on("error", err => {
+  console.log("Discord Error: " + err);
+});
+
+bot.on("shardResume", shard => {
+  console.log("shard/shardInfo", `Shard ${shard} has resumed.`);
+});
+
+bot.on("shardDisconnect", (err, shard) => {
+  if (err)
+    console.log(
+      "shard/shardStatus",
+      `Shard ${shard} disconnected. Reason ${err}`
+    );
+});
+
+bot.on("shardReady", shard => {
+  console.log("shard/shardInfo", `Shard ${shard} is ready!`);
+});
+
+function unauth(level_required) {
+  return (
+    "```patch\n- ERROR: INSUFFICIENT PERMISSION LEVEL\n- PERMISSION LEVEL " +
+    String(level_required) +
+    " IS REQUIRED```"
+  );
+}
+function arg_error(required, submitted) {
+  return (
+    "```patch\n- ERROR: INSUFFICIENT ARGUMENTS SUPPLIED\n- " +
+    String(required) +
+    " ARGUMENTS ARE REQUIRED```"
+  );
+}
+
+function parse(input) {
+  let out = input.split(" ");
+  return out;
+}
+
+bot.on("messageCreate", msg => {
+  if (msg.author.bot) return;
+
+  if (!msg.channel.guild) {
+    bot.createMessage(
+      msg.channel.id,
+      "I don't work in direct messages, please use my commands in a guild."
+    );
+    return;
+  }
+  try {
+    if (msg.content.startsWith(prefix + "select ")) {
+      let sendError = true;
+      let lookfor = msg.content.split(prefix + "select ").pop();
+      entities.forEach(function(element) {
+        if (
+          typeof element.sendMessage == "function" &&
+          element.name == lookfor
+        ) {
+          sendError = false;
+          bot.createMessage(
+            msg.channel.id,
+            String(
+              element.name +
+                "\nTank: " +
+                element.label +
+                "\nId: " +
+                element.id +
+                "\nAlpha: " +
+                element.alpha +
+                "\nColor: " +
+                element.blend.amount +
+                "\nMax Health: " +
+                element.health.max +
+                "\nCurrent Health: " +
+                element.health.amount +
+                "\nIs Invulnerable: " +
+                element.invuln +
+                "\nScore: " +
+                element.photo.score +
+                "\nLevel: " +
+                element.skill.level
+            )
+          );
+        }
+      });
+      if (sendError) {
+        bot.createMessage(
+          msg.channel.id,
+          "Was unable to find an entity by that name"
+        );
+      }
+    }
+    if (msg.content == prefix + "ping") {
+      bot.createMessage(msg.channel.id, "Pong!\n" + process.env.SPECS);
+    }
+    if (msg.content == prefix + "shutdown") {
+      if (msg.author.id == owner_id) {
+        bot.createMessage(msg.channel.id, "Shutting Down! See you later!");
+        sockets.broadcast("Manual Shutdown Issued!");
+        console.log("[SHUTDOWN] Manual Shutdown Engaged");
+        process.exit(0);
+      } else {
+        bot.createMessage(msg.channel.id, unauth(3));
+      }
+    }
+    const embed = {
+      title: "arras.io commands on " + process.env.SERVER,
+      description:
+        "Prefix: " + prefix + " (No space after prefix when running commands)",
+      url: "https://arras.neocities.org",
+      color: 20913,
+      footer: {
+        icon_url:
+          "https://cloud-cube.s3.amazonaws.com/m660o440l0wv/public/arrasicon.png",
+        text: "arras-mayhem/arras-moe"
+      },
+      thumbnail: {
+        url:
+          "https://cloud-cube.s3.amazonaws.com/m660o440l0wv/public/arrasicon.png"
+      },
+      fields: [
+        {
+          name: "Regular Commands",
+          value:
+            "\n**ping**  -  Tells you if the Arras.io server is running\n**kill** *<id>*  -  Kills a player\n**broadcast** *<message>*  -  Broadcasts a message\n**invite** - Get links to add the bot and the official Discord server.\n**query** *<internalname>*  -  Returns some data about a tank (must use internal name)\n**select** *<name>*  -  Returns some data about in-game users\n**players**  -  List in-game players\n**parrot** *<message>*  -  Repeats your message in Discord",
+          inline: true
+        },
+        {
+          name: "Admin Commands",
+          value:
+            " \n**announce** *<message>*  -  Broadcasts a message without an author (Authorization required) \n**stat** *<id> <path to stat> <new value>*  -  Modifies a stat (Authorization required))\n**shutdown** -  Shuts down the server (Authorization required)\n**close** -  Trashes the arena with Arena Closers (Authorization required)\n**define** *<id> <tank>*  -  Defines someone as a tank (Authorization required)\n**restore** *<id>* *<amount>*  -  Restores a tank's score (Authorization required)",
+          inline: true
+        }
+      ]
+    };
+    if (msg.content.includes(prefix + "help")) {
+      bot.createMessage(msg.channel.id, { embed });
+    }
+    if (msg.content.includes("<@!" + process.env.BOT_ID + ">")) {
+      bot.createMessage(
+        msg.channel.id,
+        "Hey there, my prefix is `" +
+          process.env.prefix +
+          "` for " +
+          process.env.SERVER
+      );
+    }
+    if (msg.content.includes(prefix + "invite")) {
+      bot.createMessage(
+        msg.channel.id,
+        "**You can add me to your server using this link**: https://discordapp.com/api/oauth2/authorize?client_id=706404692300660756&scope=bot \n **You can join the official Discord server here**: https://discord.gg/kmuZJT9"
+      );
+    }
+    if (msg.content.includes(prefix + "close")) {
+      if (msg.author.id == owner_id) {
+        bot.createMessage(
+          msg.channel.id,
+          "I've summoned A TON of Arena Closers!"
+        );
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+        var o = new Entity(room.random());
+        o.define(Class.shapebot);
+        o.define(ran.choose([Class.ArenaCloserBot]));
+        o.SIZE = 22;
+        o.color = 3;
+        o.team = -100;
+        o.intangibility = false;
+        o.invuln = false;
+      } else {
+        bot.createMessage(msg.channel.id, unauth(3));
+      }
+    }
+    if (msg.content.startsWith(prefix + "kill ")) {
+      if (!bannedIDs.includes(msg.author.id)) {
+        bot.createMessage(
+          msg.channel.id,
+          "You don't have access to this command."
+        );
+        return;
+      }
+      if (bannedIDs.includes(msg.author.id)) {
+        let sendError = true;
+        let lookfor = msg.content.split(prefix + "kill ").pop();
+        console.log(lookfor);
+        entities.forEach(function(element) {
+          if (element.id == lookfor) {
+            sendError = false;
+            element.destroy();
+            sockets.broadcast(
+              element.name + " has been smitten by " + msg.author.username
+            );
+            bot.createMessage(
+              msg.channel.id,
+              element.name + " has been killed."
+            );
+            var logchannel = "761295356951789581";
+            if (element.invinc) {
+              bot.createMessage(
+                logchannel,
+                "**Invincible Player:** " +
+                  "`" +
+                  element.id +
+                  "`" +
+                  " - " +
+                  element.name +
+                  " - " +
+                  "Level " +
+                  element.skill.level +
+                  " " +
+                  element.label +
+                  " - " +
+                  element.photo.score +
+                  " Points" +
+                  " has been killed by" +
+                  " " +
+                  msg.author.username +
+                  "#" +
+                  msg.author.discriminator +
+                  " on " +
+                  process.env.SERVER
+              );
+            } else {
+              bot.createMessage(
+                logchannel,
+                "`" +
+                  element.id +
+                  "`" +
+                  " - " +
+                  element.name +
+                  " - " +
+                  "Level " +
+                  element.skill.level +
+                  " " +
+                  element.label +
+                  " - " +
+                  element.photo.score +
+                  " Points" +
+                  " has been killed by" +
+                  " " +
+                  msg.author.username +
+                  "#" +
+                  msg.author.discriminator +
+                  " on " +
+                  process.env.SERVER
+              );
+            }
+          }
+        });
+        if (sendError) {
+          bot.createMessage(
+            msg.channel.id,
+            "Was unable to find an entity by the id: " + lookfor
+          );
+        }
+      } else {
+        bot.createMessage(msg.channel.id, unauth(3));
+      }
+    }
+    if (msg.content.startsWith(prefix + "ban ")) {
+      let command = parse(msg.content);
+      let id = command[1];
+      let reason;
+      if (!command[2]) reason = "Unspecified.";
+      else reason = msg.content.split(prefix + "ban " + id).pop();
+      if (msg.author.id == owner_id) {
+        if (!id)
+          bot.createMessage(msg.channel.id, {
+            embed: {
+              title: "Response", // Title of the embed
+              description: "Please specify an ID!",
+              color: "255", // Color, either in hex (show), or a base-10 integer
+              fields: [],
+              footer: {
+                // Footer text
+                text: "Sent at " + Date()
+              }
+            }
+          });
+        else {
+          let fail = true;
+          entities.forEach(function(element) {
+            if (element.id == id) {
+              bot.createMessage(
+                msg.channel.id,
+                id +
+                  " has been banned! This ban will last until the next server restart, please contact (SF) Seagull#2224 to make this permanent."
+              );
+              element.invuln = false;
+              element.kill();
+              element.ban(reason);
+              blocklist.push(element.ip);
+              console.log(
+                element.ip + " has been banned by " + msg.author.username
+              );
+              fail = false;
+            }
+          });
+          if (fail)
+            bot.createMessage(
+              msg.channel.id,
+              "No users were found with that ID"
+            );
+        }
+      } else {
+        bot.createMessage(msg.channel.id, unauth);
+      }
+    }
+    if (msg.content.startsWith(prefix + "kick ")) {
+      let command = parse(msg.content);
+      let id = command[1];
+      let reason;
+      if (!command[2]) reason = "Unspecified.";
+      else reason = msg.content.split(prefix + "kick " + id).pop();
+      if (msg.author.id == owner_id) {
+        if (!id)
+          bot.createMessage(msg.channel.id, {
+            embed: {
+              title: "Response", // Title of the embed
+              description: "Please specify an ID!",
+              color: "255", // Color, either in hex (show), or a base-10 integer
+              fields: [],
+              footer: {
+                // Footer text
+                text: "Sent at " + Date()
+              }
+            }
+          });
+        else {
+          let fail = true;
+          entities.forEach(function(element) {
+            if (element.id == id) {
+              bot.createMessage(msg.channel.id, id + " has been kicked!");
+              element.invuln = false;
+              element.kill();
+              element.ban(reason);
+              console.log(
+                element.ip + " has been kicked by " + msg.author.username
+              );
+              fail = false;
+            }
+          });
+          if (fail)
+            bot.createMessage(
+              msg.channel.id,
+              "No users were found with that ID"
+            );
+        }
+      } else {
+        bot.createMessage(msg.channel.id, unauth);
+      }
+    }
+
+    if (msg.content.startsWith(prefix + "mute ")) {
+      if (!bannedIDs.includes(msg.author.id)) {
+        bot.createMessage(
+          msg.channel.id,
+          "You don't have access to this command."
+        );
+        return;
+      }
+      if (bannedIDs.includes(msg.author.id)) {
+        let sendError = true;
+        let lookfor = msg.content.split(prefix + "mute ").pop();
+        console.log(lookfor);
+        entities.forEach(function(element) {
+          if (element.id == lookfor) {
+            sendError = false;
+            element.define({
+              MUTE: true
+            });
+            sockets.broadcast(
+              element.name + " has been muted by " + msg.author.username
+            );
+            bot.createMessage(
+              msg.channel.id,
+              element.name + " has been muted."
+            );
+          }
+        });
+        if (sendError) {
+          bot.createMessage(
+            msg.channel.id,
+            "Was unable to find an entity by the id: " + lookfor
+          );
+        }
+      } else {
+        bot.createMessage(msg.channel.id, unauth(3));
+      }
+    }
+
+    if (msg.content.startsWith(prefix + "eval")) {
+      if (msg.author.id == owner_id) {
+        var command = msg.content.split(prefix + "eval ").pop();
+        console.log("new eval: ", command);
+        var output = eval(command);
+        bot.createMessage(msg.channel.id, "Evaluated. Output: " + output);
+      } else {
+        console.log("Unauthorized user", msg.author.username, "tried to eval");
+        bot.createMessage(msg.channel.id, unauth(3));
+      }
+    }
+    if (msg.content.startsWith(prefix + "broadcast")) {
+      sockets.broadcast(
+        msg.content.split(prefix + "broadcast").pop() +
+          " - " +
+          msg.author.username
+      );
+      bot.createMessage(msg.channel.id, "Message Broadcast!");
+      console.log(
+        "[BROADCAST] " +
+          msg.content.split(prefix + "broadcast").pop() +
+          " - " +
+          msg.author.username
+      );
+    }
+    if (msg.content.startsWith(prefix + "announce")) {
+      if (msg.author.id == owner_id) {
+        sockets.broadcast(msg.content.split(prefix + "announce").pop());
+        bot.createMessage(msg.channel.id, "Announcement Made!");
+      } else {
+        bot.createMessage(msg.channel.id, unauth(3));
+      }
+    }
+    if (msg.content.startsWith(prefix + "parrot")) {
+      bot.createMessage(
+        msg.channel.id,
+        msg.content.split(prefix + "parrot").pop()
+      );
+    }
+    if (msg.content.startsWith(prefix + "lockdown")) {
+      if (bt_ids.includes(msg.author.id)) {
+        if (lockdown === true) {
+          bot.createMessage(msg.channel.id, "Server is no longer on lockdown."),
+            sockets.broadcast("The server is no longer in lockdown."),
+            (lockdown = false);
+        } else {
+          bot.createMessage(msg.channel.id, "Server is on lockdown");
+          sockets.broadcast(
+            "The server has been placed into lockdown by " +
+              msg.author.username +
+              ". No players can spawn."
+          );
+          lockdown = true;
+        }
+      } else {
+        bot.createMessage(msg.channel.id, unauth(2));
+      }
+    }
+    if (msg.content.startsWith(prefix + "query")) {
+      let output = "";
+      var query = msg.content.split(prefix + "query ").pop();
+      try {
+        var botreturn = eval("Class." + query);
+        for (var key in botreturn) {
+          if (output.length > 500) {
+            console.log(output.length);
+            bot.createMessage(msg.channel.id, output);
+            output = "";
+          }
+          output +=
+            String(key) +
+            ": " +
+            eval("Class." + query + "." + String(key)) +
+            "\n";
+          var returned = typeof eval("Class." + query + "." + String(key));
+          if (returned == "object") {
+            for (var key2 in eval("Class." + query + "." + String(key))) {
+              if (key2 != "remove") {
+                try {
+                  output +=
+                    "^ " +
+                    String(key2) +
+                    ": " +
+                    eval(
+                      "Class." +
+                        query +
+                        "." +
+                        String(key) +
+                        "[" +
+                        String(key2) +
+                        "]"
+                    ) +
+                    "\n";
+                  var returned = typeof eval(
+                    "Class." +
+                      query +
+                      "." +
+                      String(key) +
+                      "[" +
+                      String(key2) +
+                      "]"
+                  );
+                  var returnedobj = eval(
+                    "Class." +
+                      query +
+                      "." +
+                      String(key) +
+                      "[" +
+                      String(key2) +
+                      "]"
+                  );
+                } catch (err) {
+                  output +=
+                    "^ " +
+                    String(key2) +
+                    ": " +
+                    eval(
+                      "Class." + query + "." + String(key) + "." + String(key2)
+                    ) +
+                    "\n";
+                  var returned = typeof eval(
+                    "Class." + query + "." + String(key) + "." + String(key2)
+                  );
+                  var returnedobj = eval(
+                    "Class." + query + "." + String(key) + "." + String(key2)
+                  );
+                }
+                if (returned == "object") {
+                  for (var key3 in returnedobj) {
+                    if (key3 != "remove") {
+                      try {
+                        output +=
+                          "^ ^ " +
+                          String(key3) +
+                          ": " +
+                          eval(
+                            "Class." +
+                              query +
+                              "." +
+                              String(key) +
+                              "[" +
+                              String(key2) +
+                              "]" +
+                              "[" +
+                              String(key3) +
+                              "]"
+                          ) +
+                          "\n";
+                      } catch (err) {
+                        try {
+                          output +=
+                            "^ ^ " +
+                            String(key3) +
+                            ": " +
+                            eval(
+                              "Class." +
+                                query +
+                                "." +
+                                String(key) +
+                                "[" +
+                                String(key2) +
+                                "]" +
+                                "." +
+                                String(key3)
+                            ) +
+                            "\n";
+                        } catch (err) {
+                          try {
+                            output +=
+                              "^ ^ " +
+                              String(key3) +
+                              ": " +
+                              eval(
+                                "Class." +
+                                  query +
+                                  "." +
+                                  String(key) +
+                                  "." +
+                                  String(key2) +
+                                  "[" +
+                                  String(key3) +
+                                  "]"
+                              ) +
+                              "\n";
+                          } catch (err) {
+                            output +=
+                              "^ ^ " +
+                              String(key3) +
+                              ": " +
+                              eval(
+                                "Class." +
+                                  query +
+                                  "." +
+                                  String(key) +
+                                  "." +
+                                  String(key2) +
+                                  "." +
+                                  String(key3)
+                              ) +
+                              "\n";
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        bot.createMessage(msg.channel.id, String(err));
+      }
+      bot.createMessage(msg.channel.id, output);
+    }
+    if (msg.content == prefix + "players") {
+      let output = "";
+      entities.forEach(function(element) {
+        if (element.name != "") {
+          output += String(
+            "`" +
+              element.id +
+              "`" +
+              " - " +
+              element.name +
+              " - " +
+              "Level " +
+              element.skill.level +
+              " " +
+              element.label +
+              " - " +
+              element.photo.score +
+              " Points" +
+              "\n"
+          );
+        }
+      });
+      output += "";
+      const embed = {
+        title: process.env.SERVER + "'s players",
+        description: output,
+        color: 4391906,
+        url: "https://arras-mayhem.glitch.me",
+        footer: {
+          icon_url:
+            "https://cdn1.iconfinder.com/data/icons/ui-colored-2/100/UI__9-512.png",
+          text:
+            "Please only smite players that are abusing Testbed or causing large amounts of lag."
+        }
+      };
+      bot.createMessage(msg.channel.id, { embed });
+    }
+    if (msg.content.startsWith(prefix + "stat ")) {
+      if (bt_ids.includes(msg.author.id) || msg.author.id == owner_id) {
+        let s_command = parse(msg.content);
+        let s_lookForId = s_command[1];
+        let s_statpath = s_command[2];
+        let s_newvalueTemp = s_command.slice(3);
+        let s_newvalue = "";
+        s_newvalueTemp.forEach(function(element) {
+          s_newvalue += element + " ";
+        });
+        console.log(
+          "New stat command: ",
+          s_lookForId,
+          s_statpath,
+          s_newvalue,
+          "Sent by:",
+          msg.author.username,
+          "(" + msg.author.id + ")"
+        );
+        if (s_newvalue != "") {
+          entities.forEach(function(element) {
+            if (element.id == s_lookForId && s_lookForId != "ALL") {
+              try {
+                eval("element" + s_statpath + " = " + s_newvalue);
+              } catch (err) {
+                eval("element" + s_statpath + ' = "' + s_newvalue + '"');
+              }
+              element.sendMessage(
+                "your stat " + s_statpath + " has been changed to " + s_newvalue
+              );
+              bot.createMessage(
+                msg.channel.id,
+                "Value set to " + String(eval("element" + s_statpath))
+              );
+            }
+          });
+          if (s_lookForId == "ALL" && msg.author.id == owner_id) {
+            entities.forEach(function(element) {
+              try {
+                eval("element" + s_statpath + " = " + s_newvalue);
+              } catch (err) {
+                eval("element" + s_statpath + ' = "' + s_newvalue + '"');
+              }
+              element.sendMessage(
+                "your stat " + s_statpath + " has been changed to " + s_newvalue
+              );
+            });
+            bot.createMessage(msg.channel.id, "Values set to " + s_newvalue);
+          } else {
+            if (s_lookForId == "ALL")
+              bot.createMessage(msg.channel.id, unauth(3));
+          }
+        } else {
+          bot.createMessage(msg.channel.id, arg_error(3));
+        }
+      } else {
+        bot.createMessage(msg.channel.id, unauth(2));
+      }
+    }
+    if (msg.content.startsWith(prefix + "restore ")) {
+      let printerror = true;
+      let command = parse(msg.content);
+      let inputid = command[1];
+      let restoreamount = command[2];
+      if (msg.author.id == owner_id) {
+        if (msg.author.id == owner_id) {
+          if ([restoreamount] != undefined) {
+            entities.filter(
+              r => r.id == inputid
+            )[0].skill.score += restoreamount;
+            printerror = false;
+            bot.createMessage(
+              msg.channel.id,
+              "On " +
+                process.env.SERVER +
+                " " +
+                msg.author.username +
+                " restored score " +
+                restoreamount
+            );
+          } else {
+            bot.createMessage(
+              msg.channel.id,
+              restoreamount + " is not a valid amount"
+            );
+            printerror = false;
+          }
+          if (printerror) {
+            bot.createMessage(
+              msg.channel.id,
+              "Couldn't find any users by the id: " + inputid
+            );
+          }
+        } else {
+          bot.createMessage(msg.channel.id, unauth(3));
+        }
+      } else {
+        bot.createMessage(msg.channel.id, unauth(2));
+      }
+    }
+    if (msg.content.startsWith(prefix + "define ")) {
+      let printerror = true;
+      let command = parse(msg.content);
+      let inputid = command[1];
+      let inputclass = command[2];
+      if (msg.author.id == owner_id) {
+        if (msg.author.id == owner_id) {
+          if (Class[inputclass] != undefined) {
+            entities.filter(r => r.id == inputid)[0].define(Class[inputclass]);
+            printerror = false;
+            bot.createMessage(
+              msg.channel.id,
+              "On " +
+                process.env.SERVER +
+                " " +
+                msg.author.username +
+                " defined entity as Class." +
+                inputclass
+            );
+          } else {
+            bot.createMessage(
+              msg.channel.id,
+              inputclass + " is not a valid tank"
+            );
+            printerror = false;
+          }
+          if (printerror) {
+            bot.createMessage(
+              msg.channel.id,
+              "Couldn't find any users by the id: " + inputid
+            );
+          }
+        } else {
+          bot.createMessage(msg.channel.id, unauth(3));
+        }
+      } else {
+        bot.createMessage(msg.channel.id, unauth(2));
+      }
+    }
+  } catch (err) {
+    // log the error in chat
+    bot.createMessage(msg.channel.id, String(err));
+  }
+});
+
+bot.editStatus("online", {
+  name:
+    process.env.SERVER +
+    " is online! Run " +
+    process.env.prefix +
+    "help for a list of commands!",
+  type: 0
+});
+
+bot.connect();
