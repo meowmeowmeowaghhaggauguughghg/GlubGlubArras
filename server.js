@@ -8246,7 +8246,7 @@ let server = http.createServer((req, res) => {
       res.end(
         `<!DOCTYPE html><h1>arras-mayhem is ready for action!</h1>
     <h2>Click on the button below to start playing!</h2>
-    <button onclick="location.href = 'https://arras-mayhem.glitch.me'">Play</button>` +
+    <button onclick="location.href = 'https://meowmeowmeowaghhaggauguughghg.github.io/GlubGlubArras/'">Play</button>` +
           "<h3>Server: " +
           process.env.SERVER +
           "</h3>"
